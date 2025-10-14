@@ -31,11 +31,13 @@ public class PatientRepository : IPatientRepository
         var existing = GetPatient(patient.Id);
         if (existing != null)
         {
-            existing.UpdateName(patient.Name);
-            existing.UpdateAge(patient.Age);
-            existing.UpdateIdentification(patient.Identification);
-            existing.UpdatePhone(patient.Phone);
-            existing.UpdateEmail(patient.Email);
+            existing.UpdatePatientData(
+                patient.Name,
+                patient.Identification,
+                patient.Age,
+                patient.Phone,
+                patient.Email
+            );
         }
     }
     
