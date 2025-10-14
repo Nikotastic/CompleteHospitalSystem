@@ -2,7 +2,7 @@ namespace HospitalCompleteSystem.Models;
 
 public class Patient : Person
 {
-    public int Id { get; internal set; } // Setter interno para mayor seguridad
+    public int Id { get; internal set; }
     public int Age { get; set; }
 
     public Patient(string name, int age, string identification, string phone, string email)
@@ -17,25 +17,14 @@ public class Patient : Person
     }
     
     // Update methods for each property
-    public void UpdateName(string newName)
+    
+    public void UpdatePatientData(string newName, string newIdentification, int? newAge, string newPhone, string newEmail)
     {
-        Name = newName;
-    }
-    public void UpdateIdentification(string newIdentification)
-    {
-        Identification = newIdentification;
-    }
-    public void UpdateAge(int newAge)
-    {
-        Age = newAge;
-    }
-    public void UpdatePhone(string newPhone)
-    {
-        Phone = newPhone;
-    }
-    public void UpdateEmail(string newEmail)
-    {
-        Email = newEmail;
+        if (!string.IsNullOrWhiteSpace(newName)) Name = newName;
+        if (!string.IsNullOrWhiteSpace(newIdentification)) Identification = newIdentification;
+        if (newAge.HasValue && newAge.Value > 0) Age = newAge.Value;
+        if (!string.IsNullOrWhiteSpace(newPhone)) Phone = newPhone;
+        if (!string.IsNullOrWhiteSpace(newEmail)) Email = newEmail;
     }
 
     public override string ToString()

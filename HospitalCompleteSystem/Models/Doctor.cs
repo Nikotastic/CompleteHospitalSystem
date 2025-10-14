@@ -28,5 +28,14 @@ public class Doctor : Person
         return $"Doctor ID: {Id}, Name: {Name}, Specialty: {Specialty}, Identification: {Identification}, Phone: {Phone}, Email: {Email}";
     }
 
-    
+
+    // Updates the doctor's main data in a controlled and validated manner
+  
+    public void UpdateDoctorData(string newName, string newIdentification, string newPhone, string newEmail)
+    {
+        if (!string.IsNullOrWhiteSpace(newName)) Name = newName;
+        if (!string.IsNullOrWhiteSpace(newIdentification)) Identification = newIdentification;
+        if (!string.IsNullOrWhiteSpace(newPhone)) Phone = newPhone;
+        if (!string.IsNullOrWhiteSpace(newEmail)) Email = newEmail;
+    }
 }
