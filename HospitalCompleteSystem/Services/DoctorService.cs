@@ -41,6 +41,14 @@ public class DoctorService : IDoctorService
             return;
         }
 
+        // Validate that the ID is unique throughout the system
+        if (!Database.IdentificationUnique(identification))
+        {
+            Console.WriteLine("Error: That identification already exists in the system. Registration is not possible.");
+            return;
+        }
+        
+
         var phone = Exceptions.GetStringOrCancel("Phone");
         if (phone == null || !phone.All(char.IsDigit) || phone.Length < 7)
         {
@@ -136,9 +144,9 @@ public class DoctorService : IDoctorService
         if (newIdentification == null) return;
         if (!string.IsNullOrWhiteSpace(newIdentification))
         {
-            if (_repo.ExistsByIdentification(newIdentification) && newIdentification != doctor.Identification)
+            if (!Database.IdentificationUnique(newIdentification, excludeDoctorId: doctor.Id))
             {
-                Console.WriteLine("There is already a doctor with that document.");
+                Console.WriteLine("Error: That identification already exists in the system. Cannot update.");
                 return;
             }
             if (newIdentification.Length < 4)

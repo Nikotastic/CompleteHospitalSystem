@@ -13,6 +13,7 @@ public class PatientService : IPatientService
     // Method to add a new patient with input validation
     public void AddPatient()
     {
+        Console.Clear();
         Console.WriteLine("=== Add New Patient ===");
         var name = Exceptions.GetStringOrCancel("Name");
         if (name == null) return;
@@ -42,6 +43,13 @@ public class PatientService : IPatientService
         if (Database.Patients.Any(p => p.Identification == identification))
         {
             Console.WriteLine("Error: A patient with that ID already exists. Registration is not possible.");
+            return;
+        }
+
+        // Validate that the ID is unique throughout the system
+        if (!Database.IdentificationUnique(identification))
+        {
+            Console.WriteLine("Error: That identification already exists in the system. Registration is not possible.");
             return;
         }
 
@@ -179,9 +187,9 @@ public class PatientService : IPatientService
             if (newIdentification == null) return;
             if (!string.IsNullOrWhiteSpace(newIdentification) && newIdentification != patient.Identification)
             {
-                if (Database.Patients.Any(p => p.Identification == newIdentification && p.Id != patient.Id))
+                if (!Database.IdentificationUnique(newIdentification, excludePatientId: patient.Id))
                 {
-                    Console.WriteLine("Error: A patient with that ID already exists. Cannot update.");
+                    Console.WriteLine("Error: That identification already exists in the system. Cannot update.");
                     return;
                 }
                 if (newIdentification.Length < 4)
