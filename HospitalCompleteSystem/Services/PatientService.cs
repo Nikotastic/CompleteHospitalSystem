@@ -7,98 +7,62 @@ namespace HospitalCompleteSystem.Services;
 
 public class PatientService : IPatientService
 {
-    // Repository instance for patient operations
     private readonly PatientRepository _repo = new PatientRepository();
     
-    // Method to add a new patient with input validation
     public void AddPatient()
     {
         Console.Clear();
         Console.WriteLine("=== Add New Patient ===");
-        var name = Exceptions.GetStringOrCancel("Name");
-        if (name == null) return;
-
-        int age;
-        bool isValid;
-
-        do
-        {
-            Console.Write("Enter Age (must be a non-negative integer): ");
-            string input = Console.ReadLine(); 
-
-
-            isValid = int.TryParse(input, out age) && age > 0;
-
-            if (!isValid)
-            {
-                Console.WriteLine("Invalid input. Age must be a non-negative whole number.");
-            }
-        } while (!isValid); 
-        
-            
-        Console.Write("Enter Identification: ");
-        string identification = Console.ReadLine() ?? string.Empty;
-        
-        // Validate that the ID is unique
-        if (Database.Patients.Any(p => p.Identification == identification))
-        {
-            Console.WriteLine("Error: A patient with that ID already exists. Registration is not possible.");
-            return;
-        }
-
-        // Validate that the ID is unique throughout the system
-        if (!Database.IdentificationUnique(identification))
-        {
-            Console.WriteLine("Error: That identification already exists in the system. Registration is not possible.");
-            return;
-        }
-
-        string? phone;
-        do
-        {
-            phone = Exceptions.GetStringOrCancel("Phone");
-            if (phone == null) return;
-
-            if (!phone.All(char.IsDigit) || phone.Length < 7)
-            {
-                Console.WriteLine("Invalid phone number. Must contain only digits and at least 7 numbers.");
-                phone = null;
-            }
-        } while (phone == null);
-
-        string? email;
-        do
-        {
-            email = Exceptions.GetStringOrCancel("Email");
-            if (email == null) return;
-
-            if (!System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-            {
-                Console.WriteLine("Invalid email format. Example: example@mail.com");
-                email = null;
-            }
-        } while (email == null);
-        
         try
         {
-            var patient = new Patient( name, age, identification, phone, email);
-            _repo.AddPatient(patient);
+            var name = Exceptions.GetStringOrCancel("Name");
+            if (name == null) return;
 
-            Console.WriteLine($"\nClient added successfully with ID: {patient.Id}");
+            var ageInput = Exceptions.GetStringOrCancel("Age");
+            if (ageInput == null) return;
+            if (!int.TryParse(ageInput, out int age) || age <= 0)
+            {
+                Console.WriteLine("Error: Age must be a positive number.");
+                return;
+            }
+
+            var identification = Exceptions.GetStringOrCancel("Identification");
+            if (identification == null) return;
+
+            if (!Database.IdentificationUnique(identification))
+            {
+                Console.WriteLine("Error: That identification already exists in the system.");
+                return;
+            }
+
+            var phone = Exceptions.GetStringOrCancel("Phone");
+            if (phone == null) return;
+
+            var email = Exceptions.GetStringOrCancel("Email");
+            if (email == null) return;
+
+            try
+            {
+                var patient = new Patient(name, age, identification, phone, email);
+                _repo.AddPatient(patient);
+                Console.WriteLine($"\nPatient added successfully with ID: {patient.Id}");
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine($"Error while registering client: {e.Message}");
+            Console.WriteLine($"Unexpected error: {ex.Message}");
         }
     }
 
-    // Static method to get a patient by ID
     public static Patient? GetPatientById(int id)
     {
-      return  Database.Patients.FirstOrDefault(p => p.Id == id);
+        return Database.Patients.FirstOrDefault(p => p.Id == id);
     }
     
-    // Method to search for a patient by ID and display their information
     public void SearchPatientById()
     {
         Console.Clear();
@@ -119,7 +83,6 @@ public class PatientService : IPatientService
         Console.WriteLine($"\nPatient data: {patient}");
     }
     
-    // Method to list all patients
     public void ListPatients()
     {
         Console.Clear();
@@ -135,15 +98,13 @@ public class PatientService : IPatientService
         }
     }
 
-    // Method to update an existing patient's information
     public void UpdatePatient()
     {
         Console.Clear();
         Console.WriteLine("=== Update Patient ===");
-        
         try
         {
-            var idInput = Exceptions.GetStringOrCancel("Enter client ID");
+            var idInput = Exceptions.GetStringOrCancel("Enter patient ID");
             if (idInput == null) return;
             if (!int.TryParse(idInput, out int id))
             {
@@ -153,22 +114,15 @@ public class PatientService : IPatientService
             var patient = GetPatientById(id);
             if (patient == null)
             {
-                Console.WriteLine("\nClient not found.");
+                Console.WriteLine("\nPatient not found.");
                 return;
             }
             Console.WriteLine($"\nCurrent data: {patient}");
-            Console.WriteLine("\nInsert new data (or 'cancel' to exit, press Enter to keep the current value):");
+            Console.WriteLine("\nInsert new data (or 'cancel' to exit, press Enter to keep current value):");
 
-            // Name
             var newName = Exceptions.GetStringOrCancel($"Name ({patient.Name})", allowEmpty: true);
             if (newName == null) return;
-            if (!string.IsNullOrWhiteSpace(newName) && newName.Length < 2)
-            {
-                Console.WriteLine("Error: Name must have at least 2 characters.");
-                return;
-            }
 
-            // Age
             var newAgeInput = Exceptions.GetStringOrCancel($"Age ({patient.Age})", allowEmpty: true);
             if (newAgeInput == null) return;
             int? newAge = null;
@@ -182,64 +136,45 @@ public class PatientService : IPatientService
                 newAge = parsedAge;
             }
 
-            // Identification
             var newIdentification = Exceptions.GetStringOrCancel($"Identification ({patient.Identification})", allowEmpty: true);
             if (newIdentification == null) return;
             if (!string.IsNullOrWhiteSpace(newIdentification) && newIdentification != patient.Identification)
             {
                 if (!Database.IdentificationUnique(newIdentification, excludePatientId: patient.Id))
                 {
-                    Console.WriteLine("Error: That identification already exists in the system. Cannot update.");
-                    return;
-                }
-                if (newIdentification.Length < 4)
-                {
-                    Console.WriteLine("Error: Identification must have at least 4 characters.");
+                    Console.WriteLine("Error: That identification already exists in the system.");
                     return;
                 }
             }
 
-            // Phone
             var newPhone = Exceptions.GetStringOrCancel($"Phone ({patient.Phone})", allowEmpty: true);
             if (newPhone == null) return;
-            if (!string.IsNullOrWhiteSpace(newPhone))
-            {
-                if (!newPhone.All(char.IsDigit) || newPhone.Length < 7)
-                {
-                    Console.WriteLine("Error: Phone must contain only digits and at least 7 numbers.");
-                    return;
-                }
-            }
 
-            // Email
             var newEmail = Exceptions.GetStringOrCancel($"Email ({patient.Email})", allowEmpty: true);
             if (newEmail == null) return;
-            if (!string.IsNullOrWhiteSpace(newEmail))
+
+            try
             {
-                if (!System.Text.RegularExpressions.Regex.IsMatch(newEmail, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                {
-                    Console.WriteLine("Error: Invalid email format. Example: example@mail.com");
-                    return;
-                }
+                patient.UpdatePatientData(
+                    string.IsNullOrWhiteSpace(newName) ? patient.Name : newName,
+                    string.IsNullOrWhiteSpace(newIdentification) ? patient.Identification : newIdentification,
+                    newAge,
+                    string.IsNullOrWhiteSpace(newPhone) ? patient.Phone : newPhone,
+                    string.IsNullOrWhiteSpace(newEmail) ? patient.Email : newEmail
+                );
+                Console.WriteLine("\nData updated correctly.");
             }
-
-            patient.UpdatePatientData(
-                string.IsNullOrWhiteSpace(newName) ? patient.Name : newName,
-                string.IsNullOrWhiteSpace(newIdentification) ? patient.Identification : newIdentification,
-                newAge,
-                string.IsNullOrWhiteSpace(newPhone) ? patient.Phone : newPhone,
-                string.IsNullOrWhiteSpace(newEmail) ? patient.Email : newEmail
-            );
-
-            Console.WriteLine("\nData updated correctly.");
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"\nError: {ex.Message}");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error updating patient: {ex.Message}");
+            Console.WriteLine($"Unexpected error: {ex.Message}");
         }
     }
     
-    // Method to delete a patient by ID with confirmation
     public void DeletePatient()
     {
         Console.Clear();
@@ -258,17 +193,18 @@ public class PatientService : IPatientService
             return;
         }
         Console.WriteLine($"\nPatient data: {patient}");
-        Console.Write("\nAre you sure you want to delete this patient? (y/n): ");
-        string confirmation = Console.ReadLine()!.Trim().ToLower();
-        if (confirmation == "y")
+        
+        var confirm = Exceptions.GetStringOrCancel("Are you sure you want to delete this patient? (y/n):");
+        if (confirm != null && confirm.Trim().ToLower() == "y")
         {
-            _repo.DeletePatient(id);
-            Console.WriteLine("\nPatient deleted successfully.");
+            if (_repo.DeletePatient(id))
+                Console.WriteLine("\nPatient deleted successfully.");
+            else
+                Console.WriteLine("\nError deleting patient.");
         }
         else
         {
             Console.WriteLine("\nDeletion cancelled.");
         }
     }
-    
 }

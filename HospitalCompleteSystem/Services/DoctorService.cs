@@ -15,63 +15,46 @@ public class DoctorService : IDoctorService
     // Method to add a new doctor with input validation
     public void AddDoctor()
     {
+        Console.Clear();
         Console.WriteLine("=== Add New Doctor ===");
-        var name = Exceptions.GetStringOrCancel("Name");
-        if (name == null || name.Length < 2)
-        {
-            Console.WriteLine("Error: Name must have at least 2 characters.");
-            return;
-        }
-
-        var specialty = Exceptions.GetStringOrCancel("Specialty");
-        if (specialty == null || specialty.Length < 2)
-        {
-            Console.WriteLine("Error: Specialty must have at least 2 characters.");
-            return;
-        }
-
-        var identification = Exceptions.GetStringOrCancel("Identification");
-        if (identification == null || identification.Length < 4)
-        {
-            Console.WriteLine("Error: Identification must have at least 4 characters.");
-            return;
-        }
-        if (_repo.ExistsByIdentification(identification)) {
-            Console.WriteLine("There is already a doctor with that document.");
-            return;
-        }
-
-        // Validate that the ID is unique throughout the system
-        if (!Database.IdentificationUnique(identification))
-        {
-            Console.WriteLine("Error: That identification already exists in the system. Registration is not possible.");
-            return;
-        }
-        
-
-        var phone = Exceptions.GetStringOrCancel("Phone");
-        if (phone == null || !phone.All(char.IsDigit) || phone.Length < 7)
-        {
-            Console.WriteLine("Error: Phone must contain only digits and at least 7 numbers.");
-            return;
-        }
-
-        var email = Exceptions.GetStringOrCancel("Email");
-        if (email == null || !System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-        {
-            Console.WriteLine("Error: Invalid email format. Example: example@mail.com");
-            return;
-        }
-
         try
         {
-            var doctor = new Doctor(name, specialty, identification, phone, email);
-            _repo.AddDoctor(doctor);
-            Console.WriteLine($"Registered doctor with ID: {doctor.Id}");
+            var name = Exceptions.GetStringOrCancel("Name");
+            if (name == null) return;
+
+            var specialty = Exceptions.GetStringOrCancel("Specialty");
+            if (specialty == null) return;
+
+            var identification = Exceptions.GetStringOrCancel("Identification");
+            if (identification == null) return;
+
+            // Validate unique identification in the system
+            if (!Database.IdentificationUnique(identification))
+            {
+                Console.WriteLine("Error: That identification already exists in the system.");
+                return;
+            }
+
+            var phone = Exceptions.GetStringOrCancel("Phone");
+            if (phone == null) return;
+
+            var email = Exceptions.GetStringOrCancel("Email");
+            if (email == null) return;
+
+            try
+            {
+                var doctor = new Doctor(name, specialty, identification, phone, email);
+                _repo.AddDoctor(doctor);
+                Console.WriteLine($"Doctor registered successfully with ID: {doctor.Id}");
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error registering doctor: {ex.Message}");
+            Console.WriteLine($"Unexpected error: {ex.Message}");
         }
     }
 
@@ -110,90 +93,74 @@ public class DoctorService : IDoctorService
     {
         Console.Clear();
         Console.WriteLine("=== Update Doctor ===");
-        var idInput = Exceptions.GetStringOrCancel("Enter doctor ID");
-        if (idInput == null) return;
-        if (!int.TryParse(idInput, out int id))
-        {
-            Console.WriteLine("Invalid ID.");
-            return;
-        }
-        var doctor = _repo.GetDoctor(id);
-        if (doctor == null) {
-            Console.WriteLine("Doctor not found.");
-            return;
-        }
-        Console.WriteLine($"Current data: {doctor}");
-        Console.WriteLine("\nInsert new data (or 'cancel' to exit, press Enter to keep the current value):");
-
-        var newName = Exceptions.GetStringOrCancel($"Name ({doctor.Name})", allowEmpty: true);
-        if (newName == null) return;
-        if (!string.IsNullOrWhiteSpace(newName) && newName.Length < 2)
-        {
-            Console.WriteLine("Error: Name must have at least 2 characters.");
-            return;
-        }
-
-        var newSpecialty = Exceptions.GetStringOrCancel($"New specialty ({doctor.Specialty})", true);
-        if (!string.IsNullOrWhiteSpace(newSpecialty) && newSpecialty.Length < 2)
-        {
-            Console.WriteLine("Error: Specialty must have at least 2 characters.");
-            return;
-        }
-
-        var newIdentification = Exceptions.GetStringOrCancel($"New document ({doctor.Identification})", true);
-        if (newIdentification == null) return;
-        if (!string.IsNullOrWhiteSpace(newIdentification))
-        {
-            if (!Database.IdentificationUnique(newIdentification, excludeDoctorId: doctor.Id))
-            {
-                Console.WriteLine("Error: That identification already exists in the system. Cannot update.");
-                return;
-            }
-            if (newIdentification.Length < 4)
-            {
-                Console.WriteLine("Error: Identification must have at least 4 characters.");
-                return;
-            }
-        }
-
-        var newPhone = Exceptions.GetStringOrCancel($"New phone({doctor.Phone})", true);
-        if (!string.IsNullOrWhiteSpace(newPhone))
-        {
-            if (!newPhone.All(char.IsDigit) || newPhone.Length < 7)
-            {
-                Console.WriteLine("Error: Phone must contain only digits and at least 7 numbers.");
-                return;
-            }
-        }
-
-        var newEmail = Exceptions.GetStringOrCancel($"New email ({doctor.Email})", true);
-        if (!string.IsNullOrWhiteSpace(newEmail))
-        {
-            if (!System.Text.RegularExpressions.Regex.IsMatch(newEmail, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-            {
-                Console.WriteLine("Error: Invalid email format. Example: example@mail.com");
-                return;
-            }
-        }
-
         try
         {
-            // Update the doctor's data using the provided method
-            doctor.UpdateDoctorData(
-                string.IsNullOrWhiteSpace(newName) ? doctor.Name : newName,
-                string.IsNullOrWhiteSpace(newIdentification) ? doctor.Identification : newIdentification,
-                string.IsNullOrWhiteSpace(newPhone) ? doctor.Phone : newPhone,
-                string.IsNullOrWhiteSpace(newEmail) ? doctor.Email : newEmail
-            );
-            // Update specialty if provided
-            if (!string.IsNullOrWhiteSpace(newSpecialty))
-                doctor.UpdateSpecialty(newSpecialty);
-            _repo.UpdateDoctor(doctor);
-            Console.WriteLine("Doctor updated correctly.");
+            var idInput = Exceptions.GetStringOrCancel("Enter doctor ID");
+            if (idInput == null) return;
+            if (!int.TryParse(idInput, out int id))
+            {
+                Console.WriteLine("Invalid ID.");
+                return;
+            }
+
+            var doctor = _repo.GetDoctor(id);
+            if (doctor == null)
+            {
+                Console.WriteLine("Doctor not found.");
+                return;
+            }
+
+            Console.WriteLine($"Current data: {doctor}");
+            Console.WriteLine("\nInsert new data (or 'cancel' to exit, press Enter to keep current value):");
+
+            var newName = Exceptions.GetStringOrCancel($"Name ({doctor.Name})", allowEmpty: true);
+            if (newName == null) return;
+
+            var newSpecialty = Exceptions.GetStringOrCancel($"Specialty ({doctor.Specialty})", allowEmpty: true);
+            if (newSpecialty == null) return;
+
+            var newIdentification = Exceptions.GetStringOrCancel($"Identification ({doctor.Identification})", allowEmpty: true);
+            if (newIdentification == null) return;
+            if (!string.IsNullOrWhiteSpace(newIdentification) && newIdentification != doctor.Identification)
+            {
+                if (!Database.IdentificationUnique(newIdentification, excludeDoctorId: doctor.Id))
+                {
+                    Console.WriteLine("Error: That identification already exists in the system.");
+                    return;
+                }
+            }
+
+            var newPhone = Exceptions.GetStringOrCancel($"Phone ({doctor.Phone})", allowEmpty: true);
+            if (newPhone == null) return;
+
+            var newEmail = Exceptions.GetStringOrCancel($"Email ({doctor.Email})", allowEmpty: true);
+            if (newEmail == null) return;
+
+            try
+            {
+                doctor.UpdateDoctorData(
+                    string.IsNullOrWhiteSpace(newName) ? doctor.Name : newName,
+                    string.IsNullOrWhiteSpace(newIdentification) ? doctor.Identification : newIdentification,
+                    string.IsNullOrWhiteSpace(newPhone) ? doctor.Phone : newPhone,
+                    string.IsNullOrWhiteSpace(newEmail) ? doctor.Email : newEmail
+                );
+
+                if (!string.IsNullOrWhiteSpace(newSpecialty))
+                {
+                    doctor.UpdateSpecialty(newSpecialty);
+                }
+
+                _repo.UpdateDoctor(doctor);
+                Console.WriteLine("Doctor updated successfully.");
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error updating doctor: {ex.Message}");
+            Console.WriteLine($"Unexpected error: {ex.Message}");
         }
     }
 
