@@ -9,6 +9,7 @@ public class PatientService : IPatientService
 {
     private readonly PatientRepository _repo = new PatientRepository();
     
+    // Method to add a new patient with input validation
     public void AddPatient()
     {
         Console.Clear();
@@ -26,20 +27,49 @@ public class PatientService : IPatientService
                 return;
             }
 
-            var identification = Exceptions.GetStringOrCancel("Identification");
-            if (identification == null) return;
-
-            if (!Database.IdentificationUnique(identification))
+            string identification;
+            while (true)
             {
-                Console.WriteLine("Error: That identification already exists in the system.");
-                return;
+                identification = Exceptions.GetStringOrCancel("Identification");
+                if (identification == null) return;
+
+                if (!Database.IdentificationUnique(identification))
+                    Console.WriteLine("Error: That identification already exists in the system. Try again.");
+                else
+                    break;
             }
 
-            var phone = Exceptions.GetStringOrCancel("Phone");
-            if (phone == null) return;
+            string phone;
+            while (true)
+            {
+                phone = Exceptions.GetStringOrCancel("Phone");
+                if (phone == null) return;
+                try
+                {
+                    HospitalCompleteSystem.Utils.ValidationUtils.ValidatePhone(phone);
+                    break;
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+            }
 
-            var email = Exceptions.GetStringOrCancel("Email");
-            if (email == null) return;
+            string email;
+            while (true)
+            {
+                email = Exceptions.GetStringOrCancel("Email");
+                if (email == null) return;
+                try
+                {
+                    HospitalCompleteSystem.Utils.ValidationUtils.ValidateEmail(email);
+                    break;
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+            }
 
             try
             {
@@ -58,11 +88,13 @@ public class PatientService : IPatientService
         }
     }
 
+    // Static method to get a patient by ID
     public static Patient? GetPatientById(int id)
     {
         return Database.Patients.FirstOrDefault(p => p.Id == id);
     }
     
+    // Method to search for a patient by ID
     public void SearchPatientById()
     {
         Console.Clear();
@@ -83,6 +115,7 @@ public class PatientService : IPatientService
         Console.WriteLine($"\nPatient data: {patient}");
     }
     
+    // Method to list all patients
     public void ListPatients()
     {
         Console.Clear();
@@ -98,6 +131,7 @@ public class PatientService : IPatientService
         }
     }
 
+    // Method to update a patient's information
     public void UpdatePatient()
     {
         Console.Clear();
@@ -153,14 +187,48 @@ public class PatientService : IPatientService
             var newEmail = Exceptions.GetStringOrCancel($"Email ({patient.Email})", allowEmpty: true);
             if (newEmail == null) return;
 
+            string validPhone = patient.Phone;
+            while (!string.IsNullOrWhiteSpace(newPhone))
+            {
+                try
+                {
+                    HospitalCompleteSystem.Utils.ValidationUtils.ValidatePhone(newPhone);
+                    validPhone = newPhone;
+                    break;
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                    newPhone = Exceptions.GetStringOrCancel($"Phone ({patient.Phone})", allowEmpty: true);
+                    if (newPhone == null) return;
+                }
+            }
+
+            string validEmail = patient.Email;
+            while (!string.IsNullOrWhiteSpace(newEmail))
+            {
+                try
+                {
+                    HospitalCompleteSystem.Utils.ValidationUtils.ValidateEmail(newEmail);
+                    validEmail = newEmail;
+                    break;
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                    newEmail = Exceptions.GetStringOrCancel($"Email ({patient.Email})", allowEmpty: true);
+                    if (newEmail == null) return;
+                }
+            }
+
             try
             {
                 patient.UpdatePatientData(
                     string.IsNullOrWhiteSpace(newName) ? patient.Name : newName,
                     string.IsNullOrWhiteSpace(newIdentification) ? patient.Identification : newIdentification,
                     newAge,
-                    string.IsNullOrWhiteSpace(newPhone) ? patient.Phone : newPhone,
-                    string.IsNullOrWhiteSpace(newEmail) ? patient.Email : newEmail
+                    validPhone,
+                    validEmail
                 );
                 Console.WriteLine("\nData updated correctly.");
             }
@@ -174,6 +242,7 @@ public class PatientService : IPatientService
             Console.WriteLine($"Unexpected error: {ex.Message}");
         }
     }
+    // Method to delete a patient by ID
     
     public void DeletePatient()
     {

@@ -18,6 +18,12 @@ public class PatientRepository : IPatientRepository
     {
         return Database.Patients.FirstOrDefault(p => p.Id == id);
     }
+    
+    // Method to get a patient by Identification
+    public Patient? GetPatientByIdentification(string identification)
+    {
+        return Database.Patients.FirstOrDefault(p => p.Identification == identification);
+    }
 
     // Method to get all patients
     public List<Patient> GetPatients()

@@ -29,6 +29,12 @@ public class DoctorRepository : IDoctorRepository
         return Database.Doctors;
     }
 
+    // Method to get a patient by Identification
+    public Doctor? GetDoctorByIdentification(string identification)
+    {
+        return Database.Doctors.FirstOrDefault(p => p.Identification == identification);
+    }
+    
     // Method to get doctors by specialty
     public List<Doctor> GetDoctorsBySpecialty(string specialty)
     {

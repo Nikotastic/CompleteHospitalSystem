@@ -2,9 +2,6 @@ using HospitalCompleteSystem.Models;
 using HospitalCompleteSystem.Repository;
 using HospitalCompleteSystem.Interfaces;
 using HospitalCompleteSystem.Data;
-using HospitalCompleteSystem;
-using System;
-using System.Linq;
 
 namespace HospitalCompleteSystem.Services;
 
@@ -25,8 +22,17 @@ public class DoctorService : IDoctorService
             var specialty = Exceptions.GetStringOrCancel("Specialty");
             if (specialty == null) return;
 
-            var identification = Exceptions.GetStringOrCancel("Identification");
-            if (identification == null) return;
+            string identification;
+            while (true)
+            {
+                identification = Exceptions.GetStringOrCancel("Identification");
+                if (identification == null) return;
+
+                if (!Database.IdentificationUnique(identification))
+                    Console.WriteLine("Error: That identification already exists in the system. Try again.");
+                else
+                    break;
+            }
 
             // Validate unique identification in the system
             if (!Database.IdentificationUnique(identification))
@@ -35,11 +41,37 @@ public class DoctorService : IDoctorService
                 return;
             }
 
-            var phone = Exceptions.GetStringOrCancel("Phone");
-            if (phone == null) return;
+            string phone;
+            while (true)
+            {
+                phone = Exceptions.GetStringOrCancel("Phone");
+                if (phone == null) return;
+                try
+                {
+                    HospitalCompleteSystem.Utils.ValidationUtils.ValidatePhone(phone);
+                    break;
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+            }
 
-            var email = Exceptions.GetStringOrCancel("Email");
-            if (email == null) return;
+            string email;
+            while (true)
+            {
+                email = Exceptions.GetStringOrCancel("Email");
+                if (email == null) return;
+                try
+                {
+                    HospitalCompleteSystem.Utils.ValidationUtils.ValidateEmail(email);
+                    break;
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+            }
 
             try
             {
